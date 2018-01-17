@@ -28,6 +28,12 @@ csv()
   console.log('end')
   console.log(handshake_orders)
   console.log(handshake_orders.length)
+
+  let fields = Object.keys(handshake_orders[0])
+  let csv = json2csv({ data: handshake_orders, fields: fields })
+
+  fs.writeFileSync(orderbot_import_file, csv)
+
 })
 
 let todaysDate = () => {
@@ -37,20 +43,3 @@ let todaysDate = () => {
   let yy = today.getFullYear() - 2000
   return m + '/' + d + '/' + yy
 }
-// let input = fs.readFileSync(handshake_export_file, 'utf8').trim()
-// console.log(input)
-// let rows = input.split('\n')
-// // console.log(rows)
-// let handshake_fields = rows[0].split(',')
-// let handshake_orders = []
-//
-// for ( let i = 1; i < rows.length; i++ ) {
-//   let order_array = rows[i].split(',')
-//   let order = {}
-//   // console.log(order_array)
-//   for (let j = 0; j < handshake_fields.length; j++) {
-//     order[handshake_fields[j].trim()] = order_array[j].trim()
-//   }
-//   handshake_orders.push(order)
-// }
-// // console.log(handshake_orders[0].customer)
