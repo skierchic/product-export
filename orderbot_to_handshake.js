@@ -1,6 +1,8 @@
+let orderbot_export_file = './2018-01-12_orderbot_products.json'
+let handshake_import_file = './2018-01-12_orderbot_products_for_handshake.csv'
 let fs = require('fs');
 let json2csv = require('json2csv');
-let input = fs.readFileSync('./2018-01-10_orderbot_products.json')
+let input = fs.readFileSync(orderbot_export_file)
 let orderbot_products = JSON.parse(input)
 let handshake_products = []
 orderbot_products.forEach((product) => {
@@ -93,5 +95,5 @@ let fields = Object.keys(handshake_products[0])
 let csv = json2csv({ data: handshake_products, fields: fields })
 
 
-fs.writeFileSync('./2018-01-10_orderbot_products_for_handshake.csv', csv)
+fs.writeFileSync(handshake_import_file, csv)
 console.log(handshake_products.length)
