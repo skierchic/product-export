@@ -2,6 +2,8 @@
 let handshake_export_file = '2018-01-19_atlanta_handshake_orders.csv'
 let orderbot_import_file = '2018-01-19_atlanta_orderbot_orders.csv'
 let orderbot_customer_file = '2018-01-19_orderbot_customers.json'
+let customers_to_add_to_orderbot_file = '2018-01-19_customers_to_add.csv'
+let order_notes_file = '2018-01-19_order_notes.csv'
 let fs = require('fs');
 let csv = require('csvtojson');
 let json2csv = require('json2csv');
@@ -14,6 +16,7 @@ customers.forEach((customer) => {
   accountToCustomer[customer.account_id] = customer.customer_id
 })
 let customersNotInOrderbot = []
+let ordersWithNotes = []
 
 csv()
 .fromFile(handshake_export_file)
@@ -22,14 +25,14 @@ csv()
     "Order #": jsonObj.orderID,
     "Order Date": jsonObj.order_date,
     "Ship Date": jsonObj.start_ship_date,
-    "Order Status": "Quote",
+    "Order Status": "Unconfirmed",
     "Customer ID": accountToCustomer[jsonObj.customer_id],
     "Account ID": jsonObj.customer_id,
     "Orderguide ID": 840,
     "Product Name": jsonObj.description,
     "Item SKU": jsonObj.sku,
     "Product Quantity": jsonObj.qty,
-    "Individual Unit Price": jsonObj.unit_price,
+    "Individual Unit Price": jsonObj.original_unit_price,
     "Individual Unit Discount": jsonObj.unit_discount,
     "Shipping": null,
     "Amount Paid": 0,
@@ -104,20 +107,31 @@ csv()
 
   //If not in Orderbot add company to customersNotInOrderbot array
   if( !orderbotOrder["Customer ID"]){
-    customersNotInOrderbot.push({"Vendor Name": jsonObj.customer})
+    customersNotInOrderbot.push({"Customer Name": jsonObj.customer})
+  }
+
+  //If order has notes add to ordersWithNotes
+  if( orderbotOrder["Order Notes"]) {
+    ordersWithNotes.push({"Order Number": jsonObj.orderID, "Customer Name": jsonObj.customer, "Notes": jsonObj.notes})
   }
 })
 .on('done', (error) => {
   console.log('end')
   console.log(handshake_orders)
-  console.log("These customers are not in orderbot:", Array.from(new Set(customersNotInOrderbot)))
+
+  customersNotInOrderbot = removeDuplicates(customersNotInOrderbot, 'Customer Name')
+  ordersWithNotes = removeDuplicates(ordersWithNotes, 'Order Number')
+  console.log(`There are ${customersNotInOrderbot.length} customers not in orderbot:`, customersNotInOrderbot)
+  console.log(`There are ${ordersWithNotes.length} orders with notes:`)
 
   let fields = Object.keys(handshake_orders[0])
+  let notesFields = Object.keys(ordersWithNotes[0])
 
   let csv = json2csv({ data: handshake_orders, fields: fields })
 
   fs.writeFileSync(orderbot_import_file, csv)
-  fs.writeFileSync('2018-01-18customersToAddToOrderbot.csv', json2csv({ data: customersNotInOrderbot, fields: ["Vendor Name"]}))
+  fs.writeFileSync(customers_to_add_to_orderbot_file, json2csv({ data: customersNotInOrderbot, fields: ["Customer Name"]}))
+  fs.writeFileSync(order_notes_file, json2csv({ data: ordersWithNotes, fields: notesFields }))
 })
 
 let todaysDate = () => {
@@ -126,4 +140,11 @@ let todaysDate = () => {
   let m = today.getMonth() + 1
   let yy = today.getFullYear() - 2000
   return m + '/' + d + '/' + yy
+}
+
+
+function removeDuplicates(myArr, prop) {
+  return myArr.filter((obj, pos, arr) => {
+    return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
+  });
 }
